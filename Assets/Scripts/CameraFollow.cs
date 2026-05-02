@@ -7,30 +7,46 @@ public class CameraFollow : MonoBehaviour
     public float smoothSpeed = 10f;
     public float lookAtHeightOffset = 1.2f;
 
+    // --- Shake Variables ---
+    public float currentShakeDuration = 0f;
+    public float currentShakeMagnitude = 0f;
+
     void Start()
     {
         if (target == null) return;
-
-        // FIX THE STARTUP OFFSET: 
-        // Force the camera to the exact position on Frame 1 
-        // so you don't have to "rectify" it by pausing.
         transform.position = target.position + offset;
         transform.LookAt(target.position + Vector3.up * lookAtHeightOffset);
     }
 
-    // FIX THE JITTER:
-    // We use FixedUpdate because your LaneMovement3D uses FixedUpdate.
-    // This keeps the camera and the player on the exact same "clock."
     void FixedUpdate()
     {
         if (target == null) return;
 
+        // 1. Calculate the normal smooth follow position
         Vector3 desiredPosition = target.position + offset;
+        Vector3 basePosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.fixedDeltaTime);
 
-        // Use Time.fixedDeltaTime to match the physics clock
-        transform.position = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.fixedDeltaTime);
+        // 2. Apply Screen Shake if active
+        if (currentShakeDuration > 0)
+        {
+            // Add a random offset inside a sphere to create the violent shake
+            basePosition += Random.insideUnitSphere * currentShakeMagnitude;
 
-        // Keep the player centered in the frame
+            // Reduce the timer
+            currentShakeDuration -= Time.fixedDeltaTime;
+        }
+
+        // Apply final position
+        transform.position = basePosition;
+
+        // Keep looking at player
         transform.LookAt(target.position + Vector3.up * lookAtHeightOffset);
+    }
+
+    
+    public void TriggerShake(float duration, float magnitude)
+    {
+        currentShakeDuration = duration;
+        currentShakeMagnitude = magnitude;
     }
 }

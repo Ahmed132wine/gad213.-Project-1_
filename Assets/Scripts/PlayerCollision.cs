@@ -2,29 +2,61 @@ using UnityEngine;
 
 public class PlayerCollision : MonoBehaviour
 {
-    private LaneMovement3D movement;
-    private FoodMeter foodMeter;
+    [Header("NPC Collision Penalty")]
+    [Range(0f, 1f)]
+    public float speedPenaltyMultiplier = 0.4f;
+    public int foodPenaltyAmount = 10;
+    public float penaltyCooldown = 1.5f;
+
+    [Header("Visual/Audio")]
+    public ParticleSystem impactParticles;
+    public AudioSource crashSound;
+
+    
+    [Header("Screen Shake")]
+    public float shakeDuration = 0.3f;
+    public float shakeMagnitude = 0.5f;
+
+    private LaneMovement3D playerMovement;
+    private FoodMeter playerFoodMeter;
+    private float nextPenaltyTime = 0f;
 
     void Start()
     {
-        movement = GetComponent<LaneMovement3D>();
-        foodMeter = GetComponent<FoodMeter>();
+        playerMovement = GetComponent<LaneMovement3D>();
+        playerFoodMeter = GetComponent<FoodMeter>();
+        if (crashSound == null) crashSound = GetComponent<AudioSource>();
     }
 
-    private void OnCollisionEnter(Collision hit)
+    void OnCollisionEnter(Collision hitData)
     {
-        // Debug.Log ensures you can see in the Console if ANY collision happens
-        Debug.Log("Collision detected with: " + hit.gameObject.name);
+        if (Time.time < nextPenaltyTime) return;
 
-        if (hit.gameObject.CompareTag("NPC"))
+        if (hitData.collider.CompareTag("NPC"))
         {
-            Debug.Log("Hit an NPC car!");
+            ApplyImpactEffect();
+            nextPenaltyTime = Time.time + penaltyCooldown;
+        }
+    }
 
-            if (movement != null)
-                movement.ResetSpeed(0.4f); // Slow to 40% speed
+    void ApplyImpactEffect()
+    {
+        Debug.Log("Hit an NPC car!");
 
-            if (foodMeter != null)
-                foodMeter.LoseFood(10);
+        if (playerMovement != null) playerMovement.ResetSpeed(speedPenaltyMultiplier);
+        if (playerFoodMeter != null) playerFoodMeter.LoseFood(foodPenaltyAmount);
+
+        if (impactParticles != null) impactParticles.Play();
+        if (crashSound != null && crashSound.clip != null) crashSound.PlayOneShot(crashSound.clip);
+
+        
+        if (Camera.main != null)
+        {
+            CameraFollow camFollow = Camera.main.GetComponent<CameraFollow>();
+            if (camFollow != null)
+            {
+                camFollow.TriggerShake(shakeDuration, shakeMagnitude);
+            }
         }
     }
 }
