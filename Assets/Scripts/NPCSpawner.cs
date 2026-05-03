@@ -44,7 +44,7 @@ public class NPCSpawner : MonoBehaviour
         Vector3 spawnPos = player.position + Vector3.forward * spawnDistance;
         spawnPos.y = 0;
 
-        // Random X position within lane range
+        
         float randomX = Random.Range(-2.5f, 2.5f);
         spawnPos.x = randomX;
 

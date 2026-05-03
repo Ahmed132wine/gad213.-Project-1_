@@ -6,7 +6,7 @@ public class NPCCar : MonoBehaviour
     public float baseSpeed = 7f;
     public float laneSwitchSpeed = 5f;
     public float laneWidth = 2.5f;
-    public float yOffset = 0.5f; // ADJUST THIS to stop clipping
+    public float yOffset = 0.5f; 
 
     private int currentLane = 1;
     private float targetLaneX;
@@ -17,7 +17,7 @@ public class NPCCar : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.isKinematic = true; // Use Kinematic for obstacle cars to prevent physics jitter
+        rb.isKinematic = true; 
 
         currentLane = Random.Range(0, 3);
         UpdateTargetLaneX();

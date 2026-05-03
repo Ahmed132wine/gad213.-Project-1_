@@ -1,77 +1,76 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
+using System.Collections;
 
 public class FoodMeter : MonoBehaviour
 {
     [Header("Food Settings")]
-    public int maxFood = 100;
-    public int currentFood;
+    public float maxFood = 300f;
+    public float currentFood;
 
-    [Header("UI")]
+    [Header("UI References")]
     public Slider foodSlider;
-    public Text foodText;
-
-    [Header("Game Over")]
+    public TextMeshProUGUI foodText;
     public GameObject gameOverPanel;
 
+    [Header("Flash Effect")]
+    public Color flashColor = Color.red;
+    public float flashDuration = 0.2f;
+
     private bool isGameOver = false;
+    private Color originalTextColor;
 
     void Start()
     {
         currentFood = maxFood;
+        if (foodText != null)
+            originalTextColor = foodText.color;
         UpdateUI();
-        Debug.Log("Food Meter: " + currentFood + "/" + maxFood);
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
     }
 
-    public void LoseFood(int amount)
+    public void LoseFood(float amount)
     {
         if (isGameOver) return;
 
         currentFood -= amount;
-        currentFood = Mathf.Max(0, currentFood);
+        currentFood = Mathf.Clamp(currentFood, 0, maxFood);
         UpdateUI();
 
-        Debug.Log("Food lost! Remaining: " + currentFood);
+        // Flash red on text
+        if (foodText != null)
+        {
+            StopAllCoroutines(); 
+            StartCoroutine(FlashText());
+        }
 
         if (currentFood <= 0)
         {
-            GameOver();
+            TriggerGameOver();
         }
     }
 
-    public void GainFood(int amount)
+    IEnumerator FlashText()
     {
-        if (isGameOver) return;
-
-        currentFood += amount;
-        currentFood = Mathf.Min(maxFood, currentFood);
-        UpdateUI();
-
-        Debug.Log("Food gained! Now: " + currentFood);
+        foodText.color = flashColor;
+        yield return new WaitForSeconds(flashDuration);
+        foodText.color = originalTextColor;
     }
 
     void UpdateUI()
     {
-        if (foodSlider != null)
-        {
-            foodSlider.value = (float)currentFood / maxFood;
-        }
-
-        if (foodText != null)
-        {
-            foodText.text = "FOOD: " + currentFood;
-        }
+        if (foodSlider != null) foodSlider.value = currentFood / maxFood;
+        if (foodText != null) foodText.text = " " + Mathf.CeilToInt(currentFood).ToString();
     }
 
-    void GameOver()
+    void TriggerGameOver()
     {
         isGameOver = true;
-        Debug.Log("GAME OVER! No food left!");
-        Time.timeScale = 0f;
-
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(true);
-        }
+        // Stop player movement
+        GetComponent<LaneMovement3D>().forwardSpeed = 0;
+        
+        UIManager ui = FindObjectOfType<UIManager>();
+        if (ui != null) ui.GameOver();
     }
 }

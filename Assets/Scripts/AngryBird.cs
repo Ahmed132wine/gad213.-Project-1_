@@ -3,11 +3,11 @@ using UnityEngine;
 public class AngryBird : MonoBehaviour
 {
     [Header("Movement")]
-    public float flySpeedBoost = 10f;
-    public float attachDistance = 0.8f;
-    public float jitterAmount = 0.2f;
+    public float catchUpSpeed = 15f; 
+    public float attachDistance = 1.0f;
+    public float jitterAmount = 0.15f;
 
-    [Header("Conflict Settings")]
+    [Header("Damage")]
     public int foodDamage = 5;
     public float damageInterval = 2f;
 
@@ -35,23 +35,41 @@ public class AngryBird : MonoBehaviour
             playerMovement = player.GetComponent<LaneMovement3D>();
             foodMeter = player.GetComponent<FoodMeter>();
 
-            GameObject hoverObj = GameObject.FindGameObjectWithTag("Food");
-            if (hoverObj != null) foodTarget = hoverObj.transform;
+            
+            Transform[] allChildren = player.GetComponentsInChildren<Transform>();
+            foreach (Transform child in allChildren)
+            {
+                if (child.CompareTag("Food"))
+                {
+                    foodTarget = child;
+                    break;
+                }
+            }
+
+            
+            if (foodTarget == null) foodTarget = player.transform;
         }
 
-        Destroy(gameObject, 20f);
+        
+        Destroy(gameObject, 15f);
     }
 
     void Update()
     {
-        if (isScared || foodTarget == null || playerMovement == null) return;
+        if (isScared || foodTarget == null) return;
 
         if (!isAttached)
         {
-            float currentSpeed = playerMovement.forwardSpeed + flySpeedBoost;
-            transform.position = Vector3.MoveTowards(transform.position, foodTarget.position, currentSpeed * Time.deltaTime);
-            transform.LookAt(foodTarget);
 
+            float currentMoveSpeed = (playerMovement != null ? playerMovement.forwardSpeed : 0) + catchUpSpeed;
+
+           
+            transform.position = Vector3.MoveTowards(transform.position, foodTarget.position, currentMoveSpeed * Time.deltaTime);
+
+            
+            transform.LookAt(foodTarget.position);
+
+            
             if (Vector3.Distance(transform.position, foodTarget.position) < attachDistance)
             {
                 Attach();
@@ -59,14 +77,18 @@ public class AngryBird : MonoBehaviour
         }
         else
         {
-            // Hover with jitter around the exact attachment point
+            
             Vector3 hoverOffset = new Vector3(
-                Mathf.Sin(Time.time * 5f) * jitterAmount,
-                Mathf.Cos(Time.time * 4f) * jitterAmount,
-                0
+                Mathf.Sin(Time.time * 7f) * jitterAmount,
+                Mathf.Cos(Time.time * 6f) * jitterAmount,
+                Mathf.Sin(Time.time * 5f) * (jitterAmount / 2f)
             );
-            transform.localPosition = Vector3.Lerp(transform.localPosition, hoverOffset, Time.deltaTime * 8f);
 
+            
+            transform.localPosition = hoverOffset;
+            transform.localRotation = Quaternion.identity;
+
+            
             if (Time.time >= nextDamageTime)
             {
                 if (foodMeter != null) foodMeter.LoseFood(foodDamage);
@@ -77,12 +99,15 @@ public class AngryBird : MonoBehaviour
 
     void Attach()
     {
+        if (isAttached) return;
         isAttached = true;
+
+        
         transform.SetParent(foodTarget);
-        // FIX: Ensure the bird starts exactly at the hover point
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;
-        Debug.Log("Bird attached and stealing food!");
+
+        Debug.Log("Bird has landed on the delivery box!");
     }
 
     public void GetScared()
@@ -94,9 +119,10 @@ public class AngryBird : MonoBehaviour
         if (rb != null)
         {
             rb.isKinematic = false;
-            Vector3 fleeDir = (Vector3.up + Vector3.back + Random.insideUnitSphere).normalized;
-            rb.velocity = fleeDir * 15f;
+            rb.useGravity = true;
+            
+            rb.AddForce(Vector3.up * 5f + Vector3.back * 5f, ForceMode.Impulse);
         }
-        Destroy(gameObject, 1.5f);
+        Destroy(gameObject, 2f);
     }
 }

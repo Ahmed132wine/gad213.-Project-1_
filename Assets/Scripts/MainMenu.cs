@@ -5,14 +5,13 @@ public class MainMenu : MonoBehaviour
 {
     public void StartGame()
     {
-        SceneManager.LoadScene("GameScene");
-        Time.timeScale = 1f;  // Make sure game isn't paused
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("LaneMovement"); 
     }
 
     public void QuitGame()
     {
         Application.Quit();
-
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #endif

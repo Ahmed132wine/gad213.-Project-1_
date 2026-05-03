@@ -3,31 +3,33 @@ using UnityEngine;
 public class FallingBoulder : MonoBehaviour
 {
     [Header("Fall Settings")]
-    public float fallGravityScale = 3f; // Makes it feel heavy
+    public float fallGravityScale = 3f;
     public GameObject impactParticle;
 
     [Header("Damage Settings")]
     public int foodLoss = 15;
     public float speedPenalty = 0.3f;
+    public AudioSource crashSound;
+
+    [Header("Camera Shake")]
+    public float shakeDuration = 0.4f;
+    public float shakeMagnitude = 0.7f;
 
     private Rigidbody rb;
-    private bool hasHitGround = false;
+    private bool hasLanded = false;
+    private bool hasDamagedPlayer = false;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        // Increase gravity so it doesn't float down like a balloon
         rb.drag = 0;
         rb.mass = 100;
-
-        // Safety: Destroy if missed
         Destroy(gameObject, 10f);
     }
 
     void FixedUpdate()
     {
-        // Apply extra downward force for a "heavy" fall
-        if (!hasHitGround)
+        if (!hasLanded)
         {
             rb.AddForce(Vector3.down * fallGravityScale, ForceMode.Acceleration);
         }
@@ -35,36 +37,65 @@ public class FallingBoulder : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        if (hasHitGround) return;
-
-        if (collision.collider.CompareTag("Player"))
+        if (collision.collider.CompareTag("Ground") && !hasLanded)
         {
-            // CRASH LOGIC
-            collision.gameObject.GetComponent<LaneMovement3D>()?.ResetSpeed(speedPenalty);
-            collision.gameObject.GetComponent<FoodMeter>()?.LoseFood(foodLoss);
-
-            // Trigger Camera Shake
-            Camera.main.GetComponent<CameraFollow>()?.TriggerShake(0.4f, 0.7f);
-
-            Impact();
+            LandOnGround();
         }
-        else if (collision.collider.CompareTag("Ground"))
+
+        // Player collides with boulder AFTER it has landed
+        if (collision.collider.CompareTag("Player") && hasLanded && !hasDamagedPlayer)
         {
-            // Landed on road
-            Impact();
+            ApplyDamageToPlayer(collision.gameObject);
         }
     }
 
-    void Impact()
+    void LandOnGround()
     {
-        hasHitGround = true;
+        hasLanded = true;
+        Debug.Log("Boulder landed on ground");
+
+        // Freeze the boulder so it becomes static obstacle
+        rb.isKinematic = true;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        // Keep collider active
+        GetComponent<Collider>().isTrigger = false;
+
+        // Particle effect
         if (impactParticle != null)
         {
             Instantiate(impactParticle, transform.position, Quaternion.identity);
         }
 
-        // After hitting the ground, the boulder becomes a stationary obstacle 
-        // that disappears shortly after the player passes it.
-        Destroy(gameObject, 3f);
+        // Optional: ground impact sound
+        // if (crashSound != null) crashSound.PlayOneShot(crashSound.clip);
+
+        // Destroy after enough time for player to potentially hit it
+        Destroy(gameObject, 5f);
+    }
+
+    void ApplyDamageToPlayer(GameObject player)
+    {
+        hasDamagedPlayer = true;
+        Debug.Log("Player hit the landed boulder!");
+
+        // Speed penalty
+        LaneMovement3D movement = player.GetComponent<LaneMovement3D>();
+        if (movement != null) movement.ResetSpeed(speedPenalty);
+
+        // Food loss
+        FoodMeter food = player.GetComponent<FoodMeter>();
+        if (food != null) food.LoseFood(foodLoss);
+
+        // Camera shake
+        Camera.main?.GetComponent<CameraFollow>()?.TriggerShake(shakeDuration, shakeMagnitude);
+
+        // Crash sound
+        if (crashSound != null && crashSound.clip != null)
+            crashSound.PlayOneShot(crashSound.clip);
+
+        // Optional: destroy boulder upon impact (so player doesn't hit it repeatedly)
+        Destroy(gameObject, 0.1f);
     }
 }

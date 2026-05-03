@@ -12,7 +12,7 @@ public class PauseManager : MonoBehaviour
     {
         if (pauseMenuPanel != null)
         {
-            pauseMenuPanel.SetActive(true);  // Panel exists but is invisible
+            pauseMenuPanel.SetActive(true);  
             SetPauseMenuVisibility(false);
         }
     }
@@ -50,7 +50,7 @@ public class PauseManager : MonoBehaviour
     {
         if (pauseMenuPanel == null) return;
 
-        // Get or add CanvasGroup
+        
         CanvasGroup cg = pauseMenuPanel.GetComponent<CanvasGroup>();
         if (cg == null)
         {

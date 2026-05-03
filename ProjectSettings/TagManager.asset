@@ -3,7 +3,15 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - NPC
+  - Bird
+  - Headlight
+  - Food
+  - Pothole
+  - Boulder
+  - Ground
+  - Building
   layers:
   - Default
   - TransparentFX

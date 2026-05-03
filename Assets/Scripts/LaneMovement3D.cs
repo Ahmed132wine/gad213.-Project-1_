@@ -20,7 +20,7 @@ public class LaneMovement3D : MonoBehaviour
     private float targetLaneX;
     private bool isGrounded;
 
-    // NEW: Variable to track current speed for collision penalties
+    
     private float currentForwardSpeed;
     private float recoveryRate = 5f; // How fast you regain speed
 
@@ -73,7 +73,7 @@ public class LaneMovement3D : MonoBehaviour
         
     }
 
-    // THE MISSING METHOD: Called by PlayerCollision script
+    
     public void ResetSpeed(float penalty)
     {
         currentForwardSpeed = forwardSpeed * penalty;
